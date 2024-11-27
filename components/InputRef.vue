@@ -1,26 +1,18 @@
 <script setup>
-import { ref } from 'vue'
+import { useGithubStore } from '@/store/index';
+import { ref } from 'vue';
 
-// Variáveis para armazenar dados
-const githubLink = ref('')
-const userData = ref(null)
-const error = ref(null)
+const username = ref('');
+const githubStore = useGithubStore();
 
-// Função para chamar a API do GitHub e buscar dados do usuário
-const handleSubmit = async (event) => {
-  event.preventDefault()
-  userData.value = null
-  error.value = null
-
-  try {
-    const response = await fetch(`https://api.github.com/users/${githubLink.value}`)
-    if (!response.ok) throw new Error('Usuário não encontrado')
-
-    userData.value = await response.json()
-  } catch (err) {
-    error.value = err.message
+const handleSubmit = async (e) => {
+  e.preventDefault(); // Previne o comportamento padrão do formulário
+  if (username.value.trim() === '') {
+    alert('Digite um nome de usuário válido!');
+    return;
   }
-}
+  await githubStore.fetchGithubProfile(username.value);
+};
 </script>
 
 <template>
@@ -29,24 +21,24 @@ const handleSubmit = async (event) => {
       class="formulario_texto"
       type="text"
       placeholder="Digite seu nome de usuário do GitHub"
-      v-model="githubLink"
+      v-model="username"
     />
     <button class="formulario_botao" type="submit">Enviar</button>
   </form>
 
-  <!-- Exibindo o erro, se houver -->
-  <div v-if="error" class="error">
-    <p>{{ error }}</p>
+  <div v-if="githubStore.loading">Carregando...</div>
+
+  <div v-if="githubStore.error" class="error">
+    <p>{{ githubStore.error }}</p>
   </div>
 
-  <!-- Exibindo o card, se os dados estiverem presentes -->
-  <div v-if="userData" class="card">
+  <div v-if="githubStore.profile" class="card">
     <div class="card-header">
-      <img :src="userData.avatar_url" alt="Foto do perfil" class="profile-image" />
+      <img :src="githubStore.profile.avatar_url" alt="Foto do perfil" class="profile-image" />
     </div>
     <div class="card-content">
-      <h2 class="username">{{ userData.name || userData.login }}</h2>
-      <p class="bio">{{ userData.bio }}</p>
+      <h2 class="username">{{ githubStore.profile.name || githubStore.profile.login }}</h2>
+      <p class="bio">{{ githubStore.profile.bio }}</p>
     </div>
   </div>
 </template>
